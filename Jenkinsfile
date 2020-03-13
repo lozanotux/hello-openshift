@@ -59,6 +59,7 @@ pipeline {
                              * to copy into image (S2I)
                              */
                             .startBuild("--from-dir=./target", "--wait=true")
+                        openshift.tag("hello-openshift:latest", "hello-openshift:${env.TAG}")
                     }
                 }
             }
@@ -69,9 +70,21 @@ pipeline {
                     openshift.withCluster {
                         openshift.withProject("hello-openshift") {
                             openshift.set("triggers", "dc/hello-openshift", "--remove-all")
-                            openshift.set("triggers", "dc/hello-openshift", "--from-image=hello-openshift:latest", "-c hello-openshift")
+                            openshift.set("triggers", "dc/hello-openshift", "--from-image=hello-openshift:${env.TAG}", "-c hello-openshift")
                             openshift.selector("dc", "hello-openshift").rollout().status()                        }
                     }
+                }
+            }
+        }
+        stage('Promote Stage') {
+            steps {
+                input("Promote to Stage")
+            }
+        }
+        stage('Deploy to STAGE') {
+            openshift.withCluster {
+                openshift.withProject("hello-openshift-stage") {
+                    openshift.set("triggers", "dc/hello-openshift", "--remove-all")
                 }
             }
         }
